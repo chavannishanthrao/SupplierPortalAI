@@ -57,7 +57,7 @@ export default function LoginPage() {
         description: "Login successful! Redirecting...",
       });
       setTimeout(() => {
-        window.location.href = "/";
+        window.location.href = "/dashboard";
       }, 500);
     },
     onError: (error: any) => {
