@@ -15,6 +15,7 @@ import Messages from "@/pages/messages";
 import Profile from "@/pages/profile";
 import VendorOnboarding from "@/pages/vendor-onboarding";
 import VendorInvite from "@/pages/vendor-invite";
+import AdminPage from "@/pages/admin";
 import AppShell from "@/components/layout/app-shell";
 
 function Router() {
@@ -82,6 +83,11 @@ function Router() {
           <Route path="/profile">
             <AppShell>
               <Profile />
+            </AppShell>
+          </Route>
+          <Route path="/admin">
+            <AppShell>
+              <AdminPage />
             </AppShell>
           </Route>
         </>

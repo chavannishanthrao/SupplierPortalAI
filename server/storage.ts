@@ -99,6 +99,11 @@ export interface IStorage {
     onTimeDelivery: number;
     qualityScore: number;
   }>;
+
+  // Vendor invitations
+  getVendorInvitations(tenantId: string): Promise<VendorInvitation[]>;
+  createVendorInvitation(invitation: InsertVendorInvitation): Promise<VendorInvitation>;
+  getVendorInvitationByToken(token: string): Promise<VendorInvitation | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -405,6 +410,29 @@ export class DatabaseStorage implements IStorage {
       onTimeDelivery: Math.round(onTimeDelivery * 100) / 100,
       qualityScore: Math.round(qualityScore * 100) / 100,
     };
+  }
+
+  // Vendor invitation operations
+  async getVendorInvitations(tenantId: string): Promise<VendorInvitation[]> {
+    const results = await db
+      .select()
+      .from(vendorInvitations)
+      .where(eq(vendorInvitations.tenantId, tenantId))
+      .orderBy(desc(vendorInvitations.createdAt));
+    return results;
+  }
+
+  async createVendorInvitation(invitation: InsertVendorInvitation): Promise<VendorInvitation> {
+    const [result] = await db.insert(vendorInvitations).values(invitation).returning();
+    return result;
+  }
+
+  async getVendorInvitationByToken(token: string): Promise<VendorInvitation | undefined> {
+    const [invitation] = await db
+      .select()
+      .from(vendorInvitations)
+      .where(eq(vendorInvitations.inviteToken, token));
+    return invitation;
   }
 }
 

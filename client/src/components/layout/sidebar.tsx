@@ -123,6 +123,12 @@ export default function Sidebar({
       icon: Shield,
       current: location === "/compliance",
     },
+    {
+      name: "Admin",
+      href: "/admin",
+      icon: Shield,
+      current: location === "/admin",
+    },
   ];
 
   const sidebarContent = (

@@ -17,6 +17,7 @@ import {
 import multer from "multer";
 import path from "path";
 import { nanoid } from "nanoid";
+import { sendEmail, generateVendorInvitationEmail } from "./emailService";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -499,9 +500,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Vendor invitations
   app.get('/api/vendor-invitations', isAnyAuthenticated, async (req: any, res) => {
     try {
-      const tenantId = 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6'; // Default tenant UUID
-      // For now, return empty array - we'll implement storage later
-      res.json([]);
+      const tenantId = req.user?.tenantId || 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6';
+      const invitations = await storage.getVendorInvitations(tenantId);
+      res.json(invitations);
     } catch (error) {
       console.error("Error fetching vendor invitations:", error);
       res.status(500).json({ message: "Failed to fetch vendor invitations" });
@@ -510,33 +511,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/vendor-invitations', isAnyAuthenticated, async (req: any, res) => {
     try {
-      // Generate supplier login credentials
+      const currentUser = req.user;
       const supplierEmail = req.body.primaryContactEmail;
-      const tempPassword = nanoid(12); // Generate temporary password
+      const tempPassword = nanoid(12);
+      const inviteToken = nanoid();
       
       const invitationData = {
         ...req.body,
-        tenantId: req.user?.tenantId || 'default-tenant',
+        id: nanoid(),
+        tenantId: currentUser?.tenantId || 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6',
         supplierEmail,
         tempPassword,
-        inviteToken: nanoid(),
-        invitedBy: req.user?.id || 'demo-user',
+        inviteToken,
+        invitedBy: currentUser?.id || 'demo-user-12345',
         status: 'pending',
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         createdAt: new Date(),
         updatedAt: new Date(),
       };
 
-      // Here you would save to database and send email with login credentials
-      console.log("Creating vendor invitation:", {
+      // Save invitation to database
+      const savedInvitation = await storage.createVendorInvitation(invitationData);
+      
+      // Generate invitation link
+      const baseUrl = req.protocol + '://' + req.get('host');
+      const inviteLink = `${baseUrl}/vendor-invite?token=${inviteToken}&email=${encodeURIComponent(supplierEmail)}`;
+      
+      // Generate and send email
+      const requestorName = currentUser?.firstName && currentUser?.lastName ? 
+        `${currentUser.firstName} ${currentUser.lastName}` : 
+        currentUser?.email || 'Team Member';
+      const companyName = currentUser?.tenantUser?.companyName || 'Our Company';
+      
+      const { subject, html, text } = generateVendorInvitationEmail(
+        req.body.supplierName,
+        inviteLink,
+        requestorName,
+        companyName,
+        req.body.customMessage
+      );
+
+      // Attempt to send email
+      const emailSent = await sendEmail({
+        to: supplierEmail,
+        from: process.env.SMTP_USER || 'noreply@company.com',
+        subject,
+        html,
+        text
+      });
+
+      console.log("Vendor invitation created:", {
         ...invitationData,
-        tempPassword: '***hidden***' // Don't log actual password
+        tempPassword: '***hidden***',
+        emailSent
       });
       
       res.json({ 
-        message: "Vendor invitation sent successfully with login credentials",
-        invitationId: invitationData.inviteToken,
-        supplierEmail: supplierEmail
+        message: emailSent ? "Vendor invitation sent successfully via email" : "Vendor invitation created (email configuration needed)",
+        invitationId: savedInvitation.id,
+        supplierEmail: supplierEmail,
+        emailSent,
+        inviteLink: emailSent ? undefined : inviteLink // Include link if email failed
       });
     } catch (error) {
       console.error("Error creating vendor invitation:", error);
