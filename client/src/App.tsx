@@ -14,6 +14,7 @@ import Documents from "@/pages/documents";
 import Messages from "@/pages/messages";
 import Profile from "@/pages/profile";
 import VendorOnboarding from "@/pages/vendor-onboarding";
+import VendorInvite from "@/pages/vendor-invite";
 import AppShell from "@/components/layout/app-shell";
 
 function Router() {
@@ -41,6 +42,7 @@ function Router() {
         <AppShell>
           <Route path="/" component={Dashboard} />
           <Route path="/vendor-onboarding" component={VendorOnboarding} />
+          <Route path="/vendor-onboarding/invite" component={VendorInvite} />
           <Route path="/purchase-orders" component={PurchaseOrders} />
           <Route path="/invoices" component={Invoices} />
           <Route path="/documents" component={Documents} />
