@@ -535,7 +535,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         secondaryContactLastName: req.body.secondaryContactLastName || '',
         secondaryContactPhone: req.body.secondaryContactPhone || '',
         secondaryContactEmail: req.body.secondaryContactEmail || '',
-        emailTemplateId: req.body.emailTemplateId || '',
+        emailTemplateId: req.body.emailTemplateId || null,
         customMessage: req.body.customMessage || '',
         attachedDocuments: req.body.attachedDocuments || [],
         supplierEmail,
@@ -613,6 +613,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating vendor invitation:", error);
       res.status(500).json({ message: "Failed to create vendor invitation" });
+    }
+  });
+
+  // Test email endpoint
+  app.post('/api/test-email', isAnyAuthenticated, async (req: any, res) => {
+    try {
+      const { smtpConfig, testEmail } = req.body;
+      
+      // Temporarily set SMTP environment variables for test
+      const originalSMTPUser = process.env.SMTP_USER;
+      const originalSMTPPass = process.env.SMTP_PASS;
+      const originalSMTPHost = process.env.SMTP_HOST;
+      const originalSMTPPort = process.env.SMTP_PORT;
+      const originalSMTPSecure = process.env.SMTP_SECURE;
+      
+      process.env.SMTP_USER = smtpConfig.smtpUser;
+      process.env.SMTP_PASS = smtpConfig.smtpPassword;
+      process.env.SMTP_HOST = smtpConfig.smtpHost;
+      process.env.SMTP_PORT = smtpConfig.smtpPort;
+      process.env.SMTP_SECURE = smtpConfig.smtpSecure ? 'true' : 'false';
+      
+      const emailResult = await sendEmail({
+        to: testEmail,
+        from: smtpConfig.smtpUser,
+        subject: 'Test Email from Supplier Portal',
+        html: `
+          <h2>Email Configuration Test</h2>
+          <p>This is a test email to verify your SMTP configuration is working correctly.</p>
+          <p>If you received this email, your SMTP settings are configured properly!</p>
+          <hr>
+          <p><small>Sent from Supplier Portal Admin Panel</small></p>
+        `,
+        text: `
+          Email Configuration Test
+          
+          This is a test email to verify your SMTP configuration is working correctly.
+          If you received this email, your SMTP settings are configured properly!
+          
+          Sent from Supplier Portal Admin Panel
+        `
+      });
+      
+      // Restore original environment variables
+      process.env.SMTP_USER = originalSMTPUser;
+      process.env.SMTP_PASS = originalSMTPPass;
+      process.env.SMTP_HOST = originalSMTPHost;
+      process.env.SMTP_PORT = originalSMTPPort;
+      process.env.SMTP_SECURE = originalSMTPSecure;
+      
+      res.json({
+        success: emailResult.success,
+        error: emailResult.error,
+        messageId: emailResult.messageId
+      });
+    } catch (error) {
+      console.error('Test email error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to send test email'
+      });
     }
   });
 

@@ -45,19 +45,47 @@ export default function AdminPage() {
     });
   };
 
-  const testEmailConnection = () => {
+  const testEmailConnection = async () => {
+    const formData = emailForm.getValues();
+    
     toast({
       title: "Testing Email Connection",
       description: "Sending test email...",
     });
     
-    // Simulate test email
-    setTimeout(() => {
-      toast({
-        title: "Email Test Successful",
-        description: "Test email sent successfully!",
+    try {
+      const response = await fetch('/api/test-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          smtpConfig: formData,
+          testEmail: formData.smtpUser, // Send test to the configured email
+        }),
       });
-    }, 2000);
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        toast({
+          title: "Email Test Successful",
+          description: `Test email sent successfully to ${formData.smtpUser}!`,
+        });
+      } else {
+        toast({
+          title: "Email Test Failed",
+          description: result.error || "Failed to send test email",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Email Test Failed",
+        description: "Failed to connect to email service",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
