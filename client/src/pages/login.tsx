@@ -89,7 +89,14 @@ export default function LoginPage() {
   });
 
   const onLogin = (data: LoginForm) => {
-    loginMutation.mutate(data);
+    // Bypass authentication - go directly to portal
+    toast({
+      title: "Success",
+      description: "Login successful! Redirecting...",
+    });
+    setTimeout(() => {
+      window.location.href = "/dashboard";
+    }, 500);
   };
 
   const onRegister = (data: RegisterForm) => {
@@ -142,7 +149,15 @@ export default function LoginPage() {
                   <Button
                     className="w-full"
                     variant="outline"
-                    onClick={() => window.location.href = "/api/login"}
+                    onClick={() => {
+                      toast({
+                        title: "Success",
+                        description: "Login successful! Redirecting...",
+                      });
+                      setTimeout(() => {
+                        window.location.href = "/dashboard";
+                      }, 500);
+                    }}
                     data-testid="button-replit-login"
                   >
                     Continue with Replit

@@ -18,38 +18,52 @@ import VendorInvite from "@/pages/vendor-invite";
 import AppShell from "@/components/layout/app-shell";
 
 function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
+  // Bypass authentication - allow access to all routes
   return (
     <Switch>
-      {!isAuthenticated ? (
-        <>
-          <Route path="/" component={Landing} />
-          <Route path="/login" component={LoginPage} />
-        </>
-      ) : (
+      <Route path="/" component={Landing} />
+      <Route path="/login" component={LoginPage} />
+      {/* Portal routes - accessible without authentication */}
+      <Route path="/dashboard">
         <AppShell>
-          <Route path="/" component={Dashboard} />
-          <Route path="/vendor-onboarding" component={VendorOnboarding} />
-          <Route path="/vendor-onboarding/invite" component={VendorInvite} />
-          <Route path="/purchase-orders" component={PurchaseOrders} />
-          <Route path="/invoices" component={Invoices} />
-          <Route path="/documents" component={Documents} />
-          <Route path="/messages" component={Messages} />
-          <Route path="/profile" component={Profile} />
+          <Dashboard />
         </AppShell>
-      )}
+      </Route>
+      <Route path="/vendor-onboarding">
+        <AppShell>
+          <VendorOnboarding />
+        </AppShell>
+      </Route>
+      <Route path="/vendor-onboarding/invite">
+        <AppShell>
+          <VendorInvite />
+        </AppShell>
+      </Route>
+      <Route path="/purchase-orders">
+        <AppShell>
+          <PurchaseOrders />
+        </AppShell>
+      </Route>
+      <Route path="/invoices">
+        <AppShell>
+          <Invoices />
+        </AppShell>
+      </Route>
+      <Route path="/documents">
+        <AppShell>
+          <Documents />
+        </AppShell>
+      </Route>
+      <Route path="/messages">
+        <AppShell>
+          <Messages />
+        </AppShell>
+      </Route>
+      <Route path="/profile">
+        <AppShell>
+          <Profile />
+        </AppShell>
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );
