@@ -516,18 +516,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tempPassword = nanoid(12);
       const inviteToken = nanoid();
       
+      const now = new Date();
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      
       const invitationData = {
-        ...req.body,
         id: nanoid(),
         tenantId: currentUser?.tenantId || 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6',
+        entityId: req.body.entityId,
+        supplierName: req.body.supplierName,
+        requestorId: req.body.requestorId,
+        responseDueDate: req.body.responseDueDate ? new Date(req.body.responseDueDate) : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+        supplierCategory: req.body.supplierCategory,
+        defaultPaymentTerms: req.body.defaultPaymentTerms,
+        primaryContactFirstName: req.body.primaryContactFirstName,
+        primaryContactLastName: req.body.primaryContactLastName,
+        primaryContactPhone: req.body.primaryContactPhone || '',
+        primaryContactEmail: supplierEmail,
+        secondaryContactFirstName: req.body.secondaryContactFirstName || '',
+        secondaryContactLastName: req.body.secondaryContactLastName || '',
+        secondaryContactPhone: req.body.secondaryContactPhone || '',
+        secondaryContactEmail: req.body.secondaryContactEmail || '',
+        emailTemplateId: req.body.emailTemplateId || '',
+        customMessage: req.body.customMessage || '',
+        attachedDocuments: req.body.attachedDocuments || [],
         supplierEmail,
         tempPassword,
         inviteToken,
         invitedBy: currentUser?.id || 'demo-user-12345',
-        status: 'pending',
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        status: 'pending' as const,
+        expiresAt,
+        createdAt: now,
+        updatedAt: now,
       };
 
       // Save invitation to database

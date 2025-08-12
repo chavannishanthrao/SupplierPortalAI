@@ -135,7 +135,7 @@ export class DatabaseStorage implements IStorage {
 
   // Tenant operations
   async createTenant(tenant: InsertTenant): Promise<Tenant> {
-    const [result] = await db.insert(tenants).values(tenant).returning();
+    const [result] = await db.insert(tenants).values([tenant]).returning();
     return result;
   }
 
@@ -151,7 +151,7 @@ export class DatabaseStorage implements IStorage {
 
   // Tenant user operations
   async createTenantUser(tenantUser: InsertTenantUser): Promise<TenantUser> {
-    const [result] = await db.insert(tenantUsers).values(tenantUser).returning();
+    const [result] = await db.insert(tenantUsers).values([tenantUser]).returning();
     return result;
   }
 
@@ -169,7 +169,7 @@ export class DatabaseStorage implements IStorage {
 
   // Supplier profile operations
   async createSupplierProfile(profile: InsertSupplierProfile): Promise<SupplierProfile> {
-    const [result] = await db.insert(supplierProfiles).values(profile).returning();
+    const [result] = await db.insert(supplierProfiles).values([profile]).returning();
     return result;
   }
 
@@ -196,7 +196,7 @@ export class DatabaseStorage implements IStorage {
 
   // Purchase order operations
   async createPurchaseOrder(order: InsertPurchaseOrder): Promise<PurchaseOrder> {
-    const [result] = await db.insert(purchaseOrders).values(order).returning();
+    const [result] = await db.insert(purchaseOrders).values([order]).returning();
     return result;
   }
 
@@ -231,7 +231,7 @@ export class DatabaseStorage implements IStorage {
 
   // Invoice operations
   async createInvoice(invoice: InsertInvoice): Promise<Invoice> {
-    const [result] = await db.insert(invoices).values(invoice).returning();
+    const [result] = await db.insert(invoices).values([invoice]).returning();
     return result;
   }
 
@@ -266,7 +266,7 @@ export class DatabaseStorage implements IStorage {
 
   // Document operations
   async createDocument(document: InsertDocument): Promise<Document> {
-    const [result] = await db.insert(documents).values(document).returning();
+    const [result] = await db.insert(documents).values([document]).returning();
     return result;
   }
 
@@ -296,7 +296,7 @@ export class DatabaseStorage implements IStorage {
 
   // Message operations
   async createMessage(message: InsertMessage): Promise<Message> {
-    const [result] = await db.insert(messages).values(message).returning();
+    const [result] = await db.insert(messages).values([message]).returning();
     return result;
   }
 
@@ -423,7 +423,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createVendorInvitation(invitation: InsertVendorInvitation): Promise<VendorInvitation> {
-    const [result] = await db.insert(vendorInvitations).values(invitation).returning();
+    const [result] = await db.insert(vendorInvitations).values([invitation]).returning();
     return result;
   }
 
