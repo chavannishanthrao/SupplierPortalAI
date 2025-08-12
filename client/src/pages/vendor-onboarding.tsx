@@ -46,67 +46,7 @@ export default function VendorOnboardingPage() {
     queryKey: ["/api/vendor-approval-workflows"],
   });
 
-  // Support data queries
-  const { data: entities = [] } = useQuery({
-    queryKey: ["/api/entities"],
-  });
 
-  const { data: requestors = [] } = useQuery({
-    queryKey: ["/api/users"],
-  });
-
-  const { data: emailTemplates = [] } = useQuery({
-    queryKey: ["/api/email-templates"],
-  });
-
-  // Form for inviting vendors
-  const inviteForm = useForm<InviteVendorForm>({
-    resolver: zodResolver(inviteVendorSchema),
-    defaultValues: {
-      entityId: "",
-      supplierName: "",
-      requestorId: "",
-      responseDueDate: "",
-      supplierCategory: "",
-      defaultPaymentTerms: "",
-      primaryContactFirstName: "",
-      primaryContactLastName: "",
-      primaryContactPhone: "",
-      primaryContactEmail: "",
-      secondaryContactFirstName: "",
-      secondaryContactLastName: "",
-      secondaryContactPhone: "",
-      secondaryContactEmail: "",
-      emailTemplateId: "",
-      customMessage: "",
-      attachedDocuments: [],
-    },
-  });
-
-  // Mutation for sending vendor invitations
-  const inviteVendorMutation = useMutation({
-    mutationFn: (data: InviteVendorForm) =>
-      apiRequest("/api/vendor-invitations", { method: "POST", data }),
-    onSuccess: () => {
-      toast({
-        title: "Invitation Sent",
-        description: "Vendor invitation has been sent successfully!",
-      });
-      inviteForm.reset();
-      queryClient.invalidateQueries({ queryKey: ["/api/vendor-invitations"] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to send invitation",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const onInviteVendor = (data: InviteVendorForm) => {
-    inviteVendorMutation.mutate(data);
-  };
 
   // Dashboard metrics calculation
   const dashboardMetrics = {

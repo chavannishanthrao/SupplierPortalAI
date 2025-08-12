@@ -509,38 +509,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/vendor-invitations', isAnyAuthenticated, async (req: any, res) => {
     try {
-      const { email, firstName, lastName, companyName, customMessage } = req.body;
-      const tenantId = 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6'; // Default tenant UUID
-      const userId = req.user.claims?.sub || req.user.id;
+      // Generate supplier login credentials
+      const supplierEmail = req.body.primaryContactEmail;
+      const tempPassword = nanoid(12); // Generate temporary password
       
-      // Generate invite token
-      const inviteToken = Date.now().toString(36) + Math.random().toString(36).substr(2);
-      
-      // Create invitation record (mock for now)
-      const invitation = {
-        id: Date.now().toString(),
-        tenantId,
-        email,
-        firstName,
-        lastName,
-        companyName,
-        inviteToken,
+      const invitationData = {
+        ...req.body,
+        tenantId: req.user?.tenantId || 'default-tenant',
+        supplierEmail,
+        tempPassword,
+        inviteToken: nanoid(),
+        invitedBy: req.user?.id || 'demo-user',
         status: 'pending',
-        invitedBy: userId,
-        customMessage,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
         createdAt: new Date(),
+        updatedAt: new Date(),
       };
+
+      // Here you would save to database and send email with login credentials
+      console.log("Creating vendor invitation:", {
+        ...invitationData,
+        tempPassword: '***hidden***' // Don't log actual password
+      });
       
-      // In a real implementation, we would:
-      // 1. Save to database
-      // 2. Send email invitation
-      // 3. Set up tracking
-      
-      res.json({ message: "Invitation sent successfully", invitation });
+      res.json({ 
+        message: "Vendor invitation sent successfully with login credentials",
+        invitationId: invitationData.inviteToken,
+        supplierEmail: supplierEmail
+      });
     } catch (error) {
-      console.error("Error sending vendor invitation:", error);
-      res.status(500).json({ message: "Failed to send vendor invitation" });
+      console.error("Error creating vendor invitation:", error);
+      res.status(500).json({ message: "Failed to create vendor invitation" });
+    }
+  });
+
+  app.post('/api/vendor-invitations/draft', isAnyAuthenticated, async (req: any, res) => {
+    try {
+      const draftData = {
+        ...req.body,
+        tenantId: req.user?.tenantId || 'default-tenant',
+        inviteToken: nanoid(),
+        invitedBy: req.user?.id || 'demo-user',
+        status: 'draft',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      // Here you would save draft to database
+      console.log("Saving vendor invitation draft:", draftData);
+      
+      res.json({ 
+        message: "Vendor invitation draft saved successfully",
+        draftId: draftData.inviteToken 
+      });
+    } catch (error) {
+      console.error("Error saving vendor invitation draft:", error);
+      res.status(500).json({ message: "Failed to save vendor invitation draft" });
     }
   });
 

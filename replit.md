@@ -7,6 +7,7 @@ The system features a modern React frontend with TypeScript and a Node.js/Expres
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
+Form design preference: Professional, beautiful forms on separate pages rather than modals.
 
 # System Architecture
 
@@ -37,6 +38,9 @@ Preferred communication style: Simple, everyday language.
   - Purchase orders with line items
   - Invoices and documents
   - Messages and performance metrics
+  - Vendor invitations with comprehensive contact details, entity selection, and email templates
+  - Email templates for automated communications
+  - Reminder settings for invitation follow-ups
 
 ## Authentication & Authorization
 - **Primary Auth**: Replit OIDC with OAuth2/JWT tokens
@@ -50,6 +54,7 @@ Preferred communication style: Simple, everyday language.
 - **Forms**: Standardized form components with validation
 - **Modals**: Dialog-based modals for notifications and actions
 - **Responsive Design**: Mobile-first approach with breakpoint handling
+- **Vendor Onboarding**: Multi-step invitation form with comprehensive fields and professional design
 
 # External Dependencies
 
