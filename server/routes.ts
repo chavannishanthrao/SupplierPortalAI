@@ -16,6 +16,7 @@ import {
 } from "@shared/schema";
 import multer from "multer";
 import path from "path";
+import { nanoid } from "nanoid";
 
 // Configure multer for file uploads
 const upload = multer({

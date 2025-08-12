@@ -246,7 +246,7 @@ export const vendorInvitations = pgTable("vendor_invitations", {
     requiresSignature: boolean;
     url: string;
   }>>(),
-  emailTemplateId: varchar("email_template_id", { length: 255 }),
+  emailTemplateId: uuid("email_template_id").references(() => emailTemplates.id),
   
   // Generated credentials for supplier login
   supplierEmail: varchar("supplier_email", { length: 255 }).notNull(),
@@ -411,7 +411,7 @@ export const reminderSettings = pgTable("reminder_settings", {
       emailTemplate?: string;
     }>;
   }>(),
-  emailTemplateId: varchar("email_template_id", { length: 255 }).references(() => emailTemplates.id),
+  emailTemplateId: uuid("email_template_id").references(() => emailTemplates.id),
   isActive: boolean("is_active").default(true),
   createdBy: varchar("created_by").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -574,10 +574,11 @@ export const insertPerformanceMetricSchema = createInsertSchema(performanceMetri
 export const insertVendorInvitationSchema = createInsertSchema(vendorInvitations);
 export const insertVendorOnboardingFormSchema = createInsertSchema(vendorOnboardingForms);
 export const insertVendorVerificationSchema = createInsertSchema(vendorVerifications);
+export const insertEmailTemplateSchema = createInsertSchema(emailTemplates);
+export const insertReminderSettingSchema = createInsertSchema(reminderSettings);
 export const insertVendorApprovalWorkflowSchema = createInsertSchema(vendorApprovalWorkflows);
 
-// Types
-export type UpsertUser = typeof users.$inferInsert;
+// Types for frontend usage
 export type User = typeof users.$inferSelect;
 export type Tenant = typeof tenants.$inferSelect;
 export type TenantUser = typeof tenantUsers.$inferSelect;
@@ -590,8 +591,14 @@ export type PerformanceMetric = typeof performanceMetrics.$inferSelect;
 export type VendorInvitation = typeof vendorInvitations.$inferSelect;
 export type VendorOnboardingForm = typeof vendorOnboardingForms.$inferSelect;
 export type VendorVerification = typeof vendorVerifications.$inferSelect;
+export type EmailTemplate = typeof emailTemplates.$inferSelect;
+export type ReminderSetting = typeof reminderSettings.$inferSelect;
 export type VendorApprovalWorkflow = typeof vendorApprovalWorkflows.$inferSelect;
 
+// Types for frontend usage
+export type UpsertUser = typeof users.$inferInsert;
+
+// Insert types
 export type InsertTenant = z.infer<typeof insertTenantSchema>;
 export type InsertTenantUser = z.infer<typeof insertTenantUserSchema>;
 export type InsertSupplierProfile = z.infer<typeof insertSupplierProfileSchema>;
