@@ -1,0 +1,178 @@
+You are a senior full-stack engineering team. Build a multi-tenant, production-ready Advanced Supplier Portal that works seamlessly for both service-based and manufacturing-based companies.
+
+Tech Stack Requirements
+
+Backend: FastAPI (Python 3.11) + SQLAlchemy ORM + Alembic migrations
+
+Frontend: React (TypeScript) + Tailwind CSS + shadcn/ui
+
+Database: PostgreSQL (with row-level security for tenant isolation)
+
+Auth: OAuth2/JWT with refresh tokens, 2FA (TOTP), optional SSO (SAML/OIDC)
+
+Storage: AWS S3-compatible (S3 or MinIO) for documents
+
+Async Jobs: Celery / RQ with Redis
+
+Vector DB for AI: Pinecone / Weaviate / Milvus
+
+Integrations: DocuSign/Adobe Sign, ERP (SAP, Oracle, Dynamics), Payment Gateway, Govt Tax Portals
+
+Deployment: Docker + Kubernetes, CI/CD with GitHub Actions
+
+Security: AES-256 encryption at rest, TLS 1.2+ for transit, role-based access, audit logs
+
+Special Requirements
+Multi-Tenant Architecture
+
+Each tenant = a separate buyer organization.
+
+Complete data isolation (via tenant_id in all DB tables + row-level security policies).
+
+Each tenant has their own suppliers, POs, invoices, documents, and settings.
+
+Admins can manage tenant-level settings, roles, and permissions.
+
+Works for Service & Manufacturing Companies
+
+Service-based suppliers can manage service agreements, project deliverables, timesheets, SLAs, service performance metrics.
+
+Manufacturing-based suppliers can manage POs with SKUs, batch/lot numbers, BOMs, quality inspections, shipment tracking, and MPS schedules.
+
+UI dynamically adjusts terminology & modules based on company type.
+
+Common modules (onboarding, invoicing, compliance, messaging) are shared.
+
+Core Modules & Features
+1. Supplier Onboarding & Profile Management
+
+Self-registration (invite link or open sign-up) with email verification
+
+KYC docs (PAN, GST, business license, ISO, certifications) upload with expiry alerts
+
+Bank details verification (micro-deposit or API)
+
+Digital contract signing (DocuSign/Adobe Sign)
+
+Service-specific profiles (skills, project portfolio)
+
+Manufacturing-specific profiles (plant locations, production capacity)
+
+2. Purchase Order (PO) & Work Order Management
+
+Manufacturing: PO creation, acknowledgement, shipment schedules, batch tracking
+
+Services: Work Order (WO) creation, approval, deliverable tracking, timesheet submission
+
+Change request workflow
+
+PO/WO download (PDF) and versioning
+
+3. Master Production Schedule (MPS) [Manufacturing Only]
+
+View/update production schedules
+
+Real-time demand forecast sharing
+
+Capacity and availability input
+
+Historical data reference
+
+4. Project Schedule [Services Only]
+
+Milestone tracking
+
+Deliverable approvals
+
+SLA compliance dashboard
+
+5. Invoicing & Payment
+
+Manual invoice entry + ERP integration upload
+
+GST e-invoicing support
+
+Payment tracking, due date alerts
+
+Credit/debit notes
+
+TDS/GST deduction reports
+
+6. Document Management
+
+PO/WO documents, contracts, quality certificates, shipping docs, compliance docs
+
+Version control + expiry alerts
+
+7. Communication & Collaboration
+
+In-portal messaging (threaded)
+
+Announcements & notices
+
+RFQ responses
+
+Query/dispute tracking
+
+8. Performance & Compliance
+
+Manufacturing: on-time delivery %, defect rates, quality scorecard
+
+Services: SLA adherence %, client feedback rating
+
+Supplier scorecard & audit reports
+
+9. AI & Analytics
+
+AI-based demand forecast
+
+Automated PO-to-Invoice or WO-to-Invoice matching
+
+Anomaly detection (pricing, quantities, SLA breaches)
+
+AI chatbot for supplier queries
+
+Spend analysis, payment delay prediction
+
+10. Security & Access Control
+
+Role-based access (per tenant)
+
+Two-Factor Authentication
+
+Enterprise SSO
+
+Audit logs & IP allowlisting
+
+Key Non-Functional Requirements
+Fully responsive UI (mobile-friendly for supplier use)
+
+Accessible (WCAG 2.1 AA compliant)
+
+High performance (API < 300ms response time for 95% of calls)
+
+Scalable to 10,000+ suppliers per tenant
+
+CI/CD ready with automated tests
+
+Database backups & disaster recovery plan
+
+Deliverables
+Full-stack source code (backend + frontend) in one repo
+
+DB schema with tenant_id column in all core tables + row-level security
+
+API docs (OpenAPI)
+
+RBAC system with permission mapping per role & tenant
+
+Dockerized deployment with Kubernetes manifests
+
+Integration stubs for ERP, payment gateways, and e-sign
+
+Demo AI chatbot with RAG over uploaded supplier docs
+
+README with setup instructions
+
+Developer Instructions
+You are to build a multi-tenant, advanced supplier portal that supports both service and manufacturing companies. Implement tenant isolation, role-based permissions, and a configurable UI that adapts features based on company type. Prioritize security, usability, and scalability. Implement the modules and workflows described above using FastAPI, PostgreSQL, React, and Tailwind. Ensure every feature works in a multi-tenant context. Deliver with tests, CI/CD pipeline, deployment scripts, and integration stubs.
