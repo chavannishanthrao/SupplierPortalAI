@@ -136,7 +136,14 @@ export class DatabaseStorage implements IStorage {
 
   // Tenant operations
   async createTenant(tenant: InsertTenant): Promise<Tenant> {
-    const [result] = await db.insert(tenants).values([tenant]).returning();
+    const [result] = await db.insert(tenants).values({
+      ...tenant,
+      settings: tenant.settings ? {
+        companyType: (tenant.settings.companyType || 'manufacturing') as 'manufacturing' | 'service',
+        industry: tenant.settings.industry || '',
+        preferences: tenant.settings.preferences || {},
+      } : null
+    }).returning();
     return result;
   }
 
@@ -152,7 +159,10 @@ export class DatabaseStorage implements IStorage {
 
   // Tenant user operations
   async createTenantUser(tenantUser: InsertTenantUser): Promise<TenantUser> {
-    const [result] = await db.insert(tenantUsers).values([tenantUser]).returning();
+    const [result] = await db.insert(tenantUsers).values({
+      ...tenantUser,
+      companyType: tenantUser.companyType as 'manufacturing' | 'service' | null
+    }).returning();
     return result;
   }
 
@@ -170,7 +180,10 @@ export class DatabaseStorage implements IStorage {
 
   // Supplier profile operations
   async createSupplierProfile(profile: InsertSupplierProfile): Promise<SupplierProfile> {
-    const [result] = await db.insert(supplierProfiles).values([profile]).returning();
+    const [result] = await db.insert(supplierProfiles).values({
+      ...profile,
+      companyType: profile.companyType as 'manufacturing' | 'service'
+    }).returning();
     return result;
   }
 
@@ -197,7 +210,11 @@ export class DatabaseStorage implements IStorage {
 
   // Purchase order operations
   async createPurchaseOrder(order: InsertPurchaseOrder): Promise<PurchaseOrder> {
-    const [result] = await db.insert(purchaseOrders).values([order]).returning();
+    const [result] = await db.insert(purchaseOrders).values({
+      ...order,
+      orderType: order.orderType as 'purchase_order' | 'work_order',
+      lineItems: Array.isArray(order.lineItems) ? order.lineItems : []
+    }).returning();
     return result;
   }
 
@@ -267,7 +284,10 @@ export class DatabaseStorage implements IStorage {
 
   // Document operations
   async createDocument(document: InsertDocument): Promise<Document> {
-    const [result] = await db.insert(documents).values([document]).returning();
+    const [result] = await db.insert(documents).values({
+      ...document,
+      tags: Array.isArray(document.tags) ? document.tags : []
+    }).returning();
     return result;
   }
 
@@ -297,7 +317,10 @@ export class DatabaseStorage implements IStorage {
 
   // Message operations
   async createMessage(message: InsertMessage): Promise<Message> {
-    const [result] = await db.insert(messages).values([message]).returning();
+    const [result] = await db.insert(messages).values({
+      ...message,
+      attachments: Array.isArray(message.attachments) ? message.attachments : []
+    }).returning();
     return result;
   }
 
@@ -424,7 +447,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createVendorInvitation(invitation: InsertVendorInvitation): Promise<VendorInvitation> {
-    const [result] = await db.insert(vendorInvitations).values([invitation]).returning();
+    const [result] = await db.insert(vendorInvitations).values({
+      ...invitation,
+      requiredDocuments: Array.isArray(invitation.requiredDocuments) ? invitation.requiredDocuments : []
+    }).returning();
     return result;
   }
 
