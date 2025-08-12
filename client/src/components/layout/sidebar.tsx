@@ -175,9 +175,9 @@ export default function Sidebar({
       <nav className="flex-1 px-6 py-4 space-y-2">
         {navigation.map((item) => (
           <Link key={item.name} href={item.href}>
-            <a
+            <span
               className={cn(
-                "flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors text-sm font-medium",
+                "flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors text-sm font-medium cursor-pointer",
                 item.current
                   ? "text-primary bg-blue-50"
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
@@ -191,7 +191,7 @@ export default function Sidebar({
                   {item.badge}
                 </span>
               )}
-            </a>
+            </span>
           </Link>
         ))}
       </nav>
@@ -199,7 +199,7 @@ export default function Sidebar({
       {/* User Profile Section */}
       <div className="p-6 border-t border-slate-200">
         <Link href="/profile">
-          <a className="flex items-center space-x-3 hover:bg-slate-50 rounded-lg p-2 transition-colors" data-testid="link-user-profile">
+          <span className="flex items-center space-x-3 hover:bg-slate-50 rounded-lg p-2 transition-colors cursor-pointer" data-testid="link-user-profile">
             <img
               src={user?.profileImageUrl || `https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=40&h=40`}
               alt="User avatar"
@@ -218,7 +218,7 @@ export default function Sidebar({
             <Button variant="ghost" size="sm">
               <MoreVertical className="h-4 w-4" />
             </Button>
-          </a>
+          </span>
         </Link>
       </div>
     </>
