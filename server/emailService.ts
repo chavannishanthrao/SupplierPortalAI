@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
+import { storage } from './storage';
 
 interface EmailConfig {
   host: string;
@@ -19,28 +20,51 @@ interface EmailParams {
   html?: string;
 }
 
-// Default configuration for common SMTP providers
-const getDefaultSMTPConfig = (): EmailConfig => {
-  // You can configure these via environment variables
-  return {
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
-    auth: {
-      user: process.env.SMTP_USER || 'your-email@gmail.com',
-      pass: process.env.SMTP_PASS || 'your-app-password'
+// Get SMTP configuration from database or environment variables
+const getSMTPConfig = async (tenantId: string = 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6'): Promise<EmailConfig | null> => {
+  try {
+    // Try to get SMTP settings from database first
+    const [host, port, user, password, secure] = await Promise.all([
+      storage.getAdminSetting(tenantId, 'smtp_host'),
+      storage.getAdminSetting(tenantId, 'smtp_port'),
+      storage.getAdminSetting(tenantId, 'smtp_user'),
+      storage.getAdminSetting(tenantId, 'smtp_password'),
+      storage.getAdminSetting(tenantId, 'smtp_secure'),
+    ]);
+
+    if (user?.settingValue && password?.settingValue && host?.settingValue) {
+      return {
+        host: host.settingValue,
+        port: parseInt(port?.settingValue || '587'),
+        secure: secure?.settingValue === 'true',
+        auth: {
+          user: user.settingValue,
+          pass: password.settingValue
+        }
+      };
     }
-  };
+  } catch (error) {
+    console.error('Error fetching SMTP settings from database:', error);
+  }
+
+  // Fall back to environment variables
+  if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+    return {
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+      }
+    };
+  }
+
+  return null;
 };
 
-let transporter: Transporter | null = null;
-
-const initializeEmailService = () => {
-  if (!transporter) {
-    const config = getDefaultSMTPConfig();
-    transporter = nodemailer.createTransport(config);
-  }
-  return transporter;
+const createEmailTransporter = async (config: EmailConfig): Promise<Transporter> => {
+  return nodemailer.createTransporter(config);
 };
 
 interface EmailResult {
@@ -50,12 +74,14 @@ interface EmailResult {
   timestamp: Date;
 }
 
-export async function sendEmail(params: EmailParams): Promise<EmailResult> {
+export async function sendEmail(params: EmailParams & { tenantId?: string }): Promise<EmailResult> {
   const timestamp = new Date();
   
   try {
-    // Check if SMTP is configured
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    // Get SMTP configuration from database or environment variables
+    const config = await getSMTPConfig(params.tenantId);
+    
+    if (!config) {
       return {
         success: false,
         error: 'SMTP credentials not configured. Please configure in Admin settings.',
@@ -63,7 +89,7 @@ export async function sendEmail(params: EmailParams): Promise<EmailResult> {
       };
     }
 
-    const emailTransporter = initializeEmailService();
+    const emailTransporter = await createEmailTransporter(config);
     
     const mailOptions = {
       from: params.from,

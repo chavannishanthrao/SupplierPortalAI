@@ -12,6 +12,7 @@ import {
   vendorOnboardingForms,
   vendorVerifications,
   vendorApprovalWorkflows,
+  adminSettings,
   type User,
   type UpsertUser,
   type Tenant,
@@ -26,6 +27,7 @@ import {
   type VendorOnboardingForm,
   type VendorVerification,
   type VendorApprovalWorkflow,
+  type AdminSetting,
   type InsertTenant,
   type InsertTenantUser,
   type InsertSupplierProfile,
@@ -38,6 +40,7 @@ import {
   type InsertVendorOnboardingForm,
   type InsertVendorVerification,
   type InsertVendorApprovalWorkflow,
+  type InsertAdminSetting,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, count, sql } from "drizzle-orm";
@@ -105,6 +108,11 @@ export interface IStorage {
   createVendorInvitation(invitation: InsertVendorInvitation): Promise<VendorInvitation>;
   getVendorInvitationByToken(token: string): Promise<VendorInvitation | undefined>;
   updateVendorInvitation(id: string, updates: Partial<VendorInvitation>): Promise<VendorInvitation>;
+
+  // Admin settings operations
+  getAdminSetting(tenantId: string, settingKey: string): Promise<AdminSetting | undefined>;
+  setAdminSetting(tenantId: string, settingKey: string, settingValue: string, settingType?: string): Promise<AdminSetting>;
+  getAdminSettings(tenantId: string): Promise<AdminSetting[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -469,6 +477,50 @@ export class DatabaseStorage implements IStorage {
       .where(eq(vendorInvitations.id, id))
       .returning();
     return result;
+  }
+
+  // Admin settings operations
+  async getAdminSetting(tenantId: string, settingKey: string): Promise<AdminSetting | undefined> {
+    const [setting] = await db
+      .select()
+      .from(adminSettings)
+      .where(
+        and(
+          eq(adminSettings.tenantId, tenantId),
+          eq(adminSettings.settingKey, settingKey)
+        )
+      );
+    return setting;
+  }
+
+  async setAdminSetting(tenantId: string, settingKey: string, settingValue: string, settingType: string = 'string'): Promise<AdminSetting> {
+    const [setting] = await db
+      .insert(adminSettings)
+      .values({
+        tenantId,
+        settingKey,
+        settingValue,
+        settingType,
+        isEncrypted: settingKey.toLowerCase().includes('password') || settingKey.toLowerCase().includes('secret')
+      })
+      .onConflictDoUpdate({
+        target: [adminSettings.tenantId, adminSettings.settingKey],
+        set: {
+          settingValue,
+          settingType,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return setting;
+  }
+
+  async getAdminSettings(tenantId: string): Promise<AdminSetting[]> {
+    return await db
+      .select()
+      .from(adminSettings)
+      .where(eq(adminSettings.tenantId, tenantId))
+      .orderBy(adminSettings.settingKey);
   }
 }
 

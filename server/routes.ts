@@ -581,7 +581,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         from: process.env.SMTP_USER || 'noreply@company.com',
         subject,
         html,
-        text
+        text,
+        tenantId: currentUser?.tenantId || 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6'
       });
 
       // Update invitation with email status
@@ -658,7 +659,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           If you received this email, your SMTP settings are configured properly!
           
           Sent from Supplier Portal Admin Panel
-        `
+        `,
+        tenantId: req.user?.tenantId || 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6'
       });
       
       // Restore original environment variables
@@ -728,6 +730,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching vendor approval workflows:", error);
       res.status(500).json({ message: "Failed to fetch vendor approval workflows" });
+    }
+  });
+
+  // Admin settings endpoints
+  app.get('/api/admin/settings', isAnyAuthenticated, async (req: any, res) => {
+    try {
+      const tenantId = req.user?.tenantId || 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6';
+      const settings = await storage.getAdminSettings(tenantId);
+      res.json(settings);
+    } catch (error) {
+      console.error("Error fetching admin settings:", error);
+      res.status(500).json({ message: "Failed to fetch admin settings" });
+    }
+  });
+
+  app.post('/api/admin/settings', isAnyAuthenticated, async (req: any, res) => {
+    try {
+      const tenantId = req.user?.tenantId || 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6';
+      const { smtpConfig } = req.body;
+      
+      // Save SMTP configuration to database
+      const savedSettings = await Promise.all([
+        storage.setAdminSetting(tenantId, 'smtp_host', smtpConfig.smtpHost),
+        storage.setAdminSetting(tenantId, 'smtp_port', smtpConfig.smtpPort.toString()),
+        storage.setAdminSetting(tenantId, 'smtp_user', smtpConfig.smtpUser),
+        storage.setAdminSetting(tenantId, 'smtp_password', smtpConfig.smtpPassword),
+        storage.setAdminSetting(tenantId, 'smtp_secure', smtpConfig.smtpSecure.toString()),
+      ]);
+
+      res.json({ 
+        message: "SMTP settings saved successfully",
+        settings: savedSettings
+      });
+    } catch (error) {
+      console.error("Error saving admin settings:", error);
+      res.status(500).json({ message: "Failed to save admin settings" });
     }
   });
 

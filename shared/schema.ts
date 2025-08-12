@@ -423,6 +423,18 @@ export const reminderSettings = pgTable("reminder_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Admin settings for tenant configuration
+export const adminSettings = pgTable("admin_settings", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  settingKey: varchar("setting_key", { length: 100 }).notNull(),
+  settingValue: text("setting_value"),
+  settingType: varchar("setting_type", { length: 50 }).default('string'), // string, json, boolean, number
+  isEncrypted: boolean("is_encrypted").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Vendor approval workflows
 export const vendorApprovalWorkflows = pgTable("vendor_approval_workflows", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -588,6 +600,7 @@ export const insertVendorVerificationSchema = createInsertSchema(vendorVerificat
 export const insertEmailTemplateSchema = createInsertSchema(emailTemplates);
 export const insertReminderSettingSchema = createInsertSchema(reminderSettings);
 export const insertVendorApprovalWorkflowSchema = createInsertSchema(vendorApprovalWorkflows);
+export const insertAdminSettingSchema = createInsertSchema(adminSettings);
 
 // Types for frontend usage
 export type User = typeof users.$inferSelect;
@@ -605,6 +618,7 @@ export type VendorVerification = typeof vendorVerifications.$inferSelect;
 export type EmailTemplate = typeof emailTemplates.$inferSelect;
 export type ReminderSetting = typeof reminderSettings.$inferSelect;
 export type VendorApprovalWorkflow = typeof vendorApprovalWorkflows.$inferSelect;
+export type AdminSetting = typeof adminSettings.$inferSelect;
 
 // Types for frontend usage
 export type UpsertUser = typeof users.$inferInsert;
@@ -622,3 +636,4 @@ export type InsertVendorInvitation = z.infer<typeof insertVendorInvitationSchema
 export type InsertVendorOnboardingForm = z.infer<typeof insertVendorOnboardingFormSchema>;
 export type InsertVendorVerification = z.infer<typeof insertVendorVerificationSchema>;
 export type InsertVendorApprovalWorkflow = z.infer<typeof insertVendorApprovalWorkflowSchema>;
+export type InsertAdminSetting = z.infer<typeof insertAdminSettingSchema>;

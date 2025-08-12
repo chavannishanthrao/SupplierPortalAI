@@ -36,13 +36,40 @@ export default function AdminPage() {
     },
   });
 
-  const onEmailConfigSubmit = (data: EmailConfigForm) => {
-    // In a real implementation, this would save to environment variables or settings
-    console.log("Email configuration:", data);
-    toast({
-      title: "Email Configuration Saved",
-      description: "SMTP settings have been updated successfully.",
-    });
+  const onEmailConfigSubmit = async (data: EmailConfigForm) => {
+    try {
+      const response = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          smtpConfig: data
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "Email Configuration Saved",
+          description: "SMTP settings have been updated successfully.",
+        });
+      } else {
+        toast({
+          title: "Failed to Save Configuration",
+          description: result.message || "An error occurred while saving SMTP settings.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error saving email configuration:", error);
+      toast({
+        title: "Failed to Save Configuration",
+        description: "An error occurred while saving SMTP settings.",
+        variant: "destructive",
+      });
+    }
   };
 
   const testEmailConnection = async () => {
