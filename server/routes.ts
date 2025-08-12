@@ -447,6 +447,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Vendor onboarding API routes
+  
+  // Vendor invitations
+  app.get('/api/vendor-invitations', isAnyAuthenticated, async (req: any, res) => {
+    try {
+      const tenantId = 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6'; // Default tenant UUID
+      // For now, return empty array - we'll implement storage later
+      res.json([]);
+    } catch (error) {
+      console.error("Error fetching vendor invitations:", error);
+      res.status(500).json({ message: "Failed to fetch vendor invitations" });
+    }
+  });
+
+  app.post('/api/vendor-invitations', isAnyAuthenticated, async (req: any, res) => {
+    try {
+      const { email, firstName, lastName, companyName, customMessage } = req.body;
+      const tenantId = 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6'; // Default tenant UUID
+      const userId = req.user.claims?.sub || req.user.id;
+      
+      // Generate invite token
+      const inviteToken = Date.now().toString(36) + Math.random().toString(36).substr(2);
+      
+      // Create invitation record (mock for now)
+      const invitation = {
+        id: Date.now().toString(),
+        tenantId,
+        email,
+        firstName,
+        lastName,
+        companyName,
+        inviteToken,
+        status: 'pending',
+        invitedBy: userId,
+        customMessage,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+        createdAt: new Date(),
+      };
+      
+      // In a real implementation, we would:
+      // 1. Save to database
+      // 2. Send email invitation
+      // 3. Set up tracking
+      
+      res.json({ message: "Invitation sent successfully", invitation });
+    } catch (error) {
+      console.error("Error sending vendor invitation:", error);
+      res.status(500).json({ message: "Failed to send vendor invitation" });
+    }
+  });
+
+  // Vendor onboarding forms
+  app.get('/api/vendor-onboarding-forms', isAnyAuthenticated, async (req: any, res) => {
+    try {
+      const tenantId = 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6'; // Default tenant UUID
+      // For now, return empty array - we'll implement storage later
+      res.json([]);
+    } catch (error) {
+      console.error("Error fetching vendor onboarding forms:", error);
+      res.status(500).json({ message: "Failed to fetch vendor onboarding forms" });
+    }
+  });
+
+  // Vendor approval workflows
+  app.get('/api/vendor-approval-workflows', isAnyAuthenticated, async (req: any, res) => {
+    try {
+      const tenantId = 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6'; // Default tenant UUID
+      // For now, return empty array - we'll implement storage later
+      res.json([]);
+    } catch (error) {
+      console.error("Error fetching vendor approval workflows:", error);
+      res.status(500).json({ message: "Failed to fetch vendor approval workflows" });
+    }
+  });
+
   // Serve uploaded files
   app.use('/uploads', (req, res, next) => {
     // Add basic security check here

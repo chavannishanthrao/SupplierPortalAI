@@ -8,6 +8,10 @@ import {
   documents,
   messages,
   performanceMetrics,
+  vendorInvitations,
+  vendorOnboardingForms,
+  vendorVerifications,
+  vendorApprovalWorkflows,
   type User,
   type UpsertUser,
   type Tenant,
@@ -18,6 +22,10 @@ import {
   type Document,
   type Message,
   type PerformanceMetric,
+  type VendorInvitation,
+  type VendorOnboardingForm,
+  type VendorVerification,
+  type VendorApprovalWorkflow,
   type InsertTenant,
   type InsertTenantUser,
   type InsertSupplierProfile,
@@ -26,6 +34,10 @@ import {
   type InsertDocument,
   type InsertMessage,
   type InsertPerformanceMetric,
+  type InsertVendorInvitation,
+  type InsertVendorOnboardingForm,
+  type InsertVendorVerification,
+  type InsertVendorApprovalWorkflow,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, count, sql } from "drizzle-orm";

@@ -213,6 +213,173 @@ export const performanceMetrics = pgTable("performance_metrics", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Vendor invitations
+export const vendorInvitations = pgTable("vendor_invitations", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  firstName: varchar("first_name", { length: 100 }),
+  lastName: varchar("last_name", { length: 100 }),
+  companyName: varchar("company_name", { length: 255 }),
+  inviteToken: varchar("invite_token", { length: 255 }).unique().notNull(),
+  status: varchar("status", { length: 50 }).default('pending'), // pending, accepted, expired, revoked
+  invitedBy: varchar("invited_by").references(() => users.id).notNull(),
+  customMessage: text("custom_message"),
+  expiresAt: timestamp("expires_at").notNull(),
+  acceptedAt: timestamp("accepted_at"),
+  remindersSent: integer("reminders_sent").default(0),
+  lastReminderAt: timestamp("last_reminder_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Vendor onboarding forms
+export const vendorOnboardingForms = pgTable("vendor_onboarding_forms", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  vendorId: varchar("vendor_id").references(() => users.id),
+  invitationId: uuid("invitation_id").references(() => vendorInvitations.id),
+  formData: jsonb("form_data").$type<{
+    businessInfo: {
+      legalName: string;
+      tradeName?: string;
+      businessType: string;
+      incorporationDate: string;
+      registrationNumber: string;
+      country: string;
+      state?: string;
+      city: string;
+      address: string;
+      postalCode: string;
+      website?: string;
+      employeeCount?: number;
+    };
+    taxInfo: {
+      taxId: string; // PAN/TIN based on country
+      vatNumber?: string;
+      gstNumber?: string;
+      msmeRegistration?: string;
+      taxCertificates?: Array<{ type: string; number: string; expiryDate: string; fileUrl?: string }>;
+    };
+    bankingInfo: {
+      accountHolderName: string;
+      accountNumber: string;
+      routingNumber: string;
+      bankName: string;
+      swiftCode?: string;
+      currency: string;
+      isVerified: boolean;
+    };
+    contactInfo: {
+      primaryContact: {
+        name: string;
+        designation: string;
+        email: string;
+        phone: string;
+      };
+      financialContact?: {
+        name: string;
+        designation: string;
+        email: string;
+        phone: string;
+      };
+    };
+    documents: Array<{
+      type: string;
+      name: string;
+      fileUrl: string;
+      uploadedAt: string;
+      verificationStatus?: 'pending' | 'verified' | 'rejected';
+      rejectionReason?: string;
+    }>;
+    capabilities: {
+      categories: string[];
+      skills: string[];
+      certifications: Array<{
+        name: string;
+        issuedBy: string;
+        validFrom: string;
+        validTo: string;
+        certificateUrl?: string;
+      }>;
+      productionCapacity?: {
+        description: string;
+        monthlyCapacity?: number;
+        unit?: string;
+      };
+      qualityStandards: string[];
+      locations: string[];
+    };
+  }>(),
+  status: varchar("status", { length: 50 }).default('draft'), // draft, submitted, under_review, approved, rejected, revision_required
+  completionPercentage: integer("completion_percentage").default(0),
+  submittedAt: timestamp("submitted_at"),
+  reviewedBy: varchar("reviewed_by").references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewComments: text("review_comments"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Vendor verification results
+export const vendorVerifications = pgTable("vendor_verifications", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  vendorId: varchar("vendor_id").references(() => users.id).notNull(),
+  onboardingFormId: uuid("onboarding_form_id").references(() => vendorOnboardingForms.id),
+  verificationType: varchar("verification_type", { length: 100 }).notNull(), // tax_id, vat_number, msme, bank_account, etc.
+  verificationData: jsonb("verification_data").$type<{
+    inputValue: string;
+    apiResponse?: any;
+    verificationStatus: 'pending' | 'verified' | 'failed' | 'manual_review';
+    verifiedData?: any;
+    discrepancies?: string[];
+    riskScore?: number;
+    lastChecked: string;
+  }>(),
+  status: varchar("status", { length: 50 }).notNull(), // pending, verified, failed, manual_review
+  riskScore: decimal("risk_score", { precision: 5, scale: 2 }),
+  verificationSource: varchar("verification_source", { length: 100 }), // govt_api, third_party, manual
+  verifiedAt: timestamp("verified_at"),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Vendor approval workflows
+export const vendorApprovalWorkflows = pgTable("vendor_approval_workflows", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  vendorId: varchar("vendor_id").references(() => users.id).notNull(),
+  onboardingFormId: uuid("onboarding_form_id").references(() => vendorOnboardingForms.id).notNull(),
+  workflowSteps: jsonb("workflow_steps").$type<Array<{
+    step: number;
+    name: string;
+    assignedTo: string;
+    status: 'pending' | 'approved' | 'rejected';
+    comments?: string;
+    completedAt?: string;
+    completedBy?: string;
+  }>>(),
+  currentStep: integer("current_step").default(1),
+  finalStatus: varchar("final_status", { length: 50 }).default('pending'), // pending, approved, rejected
+  overallScore: decimal("overall_score", { precision: 5, scale: 2 }),
+  scoreBreakdown: jsonb("score_breakdown").$type<{
+    compliance: number;
+    financial: number;
+    operational: number;
+    reputation: number;
+    documentation: number;
+  }>(),
+  approvedBy: varchar("approved_by").references(() => users.id),
+  approvedAt: timestamp("approved_at"),
+  rejectedBy: varchar("rejected_by").references(() => users.id),
+  rejectedAt: timestamp("rejected_at"),
+  rejectionReason: text("rejection_reason"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const tenantsRelations = relations(tenants, ({ many }) => ({
   tenantUsers: many(tenantUsers),
@@ -332,6 +499,10 @@ export const insertInvoiceSchema = createInsertSchema(invoices);
 export const insertDocumentSchema = createInsertSchema(documents);
 export const insertMessageSchema = createInsertSchema(messages);
 export const insertPerformanceMetricSchema = createInsertSchema(performanceMetrics);
+export const insertVendorInvitationSchema = createInsertSchema(vendorInvitations);
+export const insertVendorOnboardingFormSchema = createInsertSchema(vendorOnboardingForms);
+export const insertVendorVerificationSchema = createInsertSchema(vendorVerifications);
+export const insertVendorApprovalWorkflowSchema = createInsertSchema(vendorApprovalWorkflows);
 
 // Types
 export type UpsertUser = typeof users.$inferInsert;
@@ -344,6 +515,10 @@ export type Invoice = typeof invoices.$inferSelect;
 export type Document = typeof documents.$inferSelect;
 export type Message = typeof messages.$inferSelect;
 export type PerformanceMetric = typeof performanceMetrics.$inferSelect;
+export type VendorInvitation = typeof vendorInvitations.$inferSelect;
+export type VendorOnboardingForm = typeof vendorOnboardingForms.$inferSelect;
+export type VendorVerification = typeof vendorVerifications.$inferSelect;
+export type VendorApprovalWorkflow = typeof vendorApprovalWorkflows.$inferSelect;
 
 export type InsertTenant = z.infer<typeof insertTenantSchema>;
 export type InsertTenantUser = z.infer<typeof insertTenantUserSchema>;
@@ -353,3 +528,7 @@ export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type InsertPerformanceMetric = z.infer<typeof insertPerformanceMetricSchema>;
+export type InsertVendorInvitation = z.infer<typeof insertVendorInvitationSchema>;
+export type InsertVendorOnboardingForm = z.infer<typeof insertVendorOnboardingFormSchema>;
+export type InsertVendorVerification = z.infer<typeof insertVendorVerificationSchema>;
+export type InsertVendorApprovalWorkflow = z.infer<typeof insertVendorApprovalWorkflowSchema>;

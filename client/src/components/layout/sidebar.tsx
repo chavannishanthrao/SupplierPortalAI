@@ -49,6 +49,12 @@ export default function Sidebar({
       icon: ChartPie,
       current: location === "/",
     },
+    {
+      name: "Vendor Onboarding",
+      href: "/vendor-onboarding",
+      icon: Handshake,
+      current: location === "/vendor-onboarding",
+    },
     // Manufacturing-specific navigation
     ...(companyType === 'manufacturing' ? [
       {
