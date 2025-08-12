@@ -2,6 +2,9 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { isAnyAuthenticated, createLocalUser } from "./localAuth";
+import { z } from "zod";
+import passport from "passport";
 import {
   insertTenantSchema,
   insertTenantUserSchema,
@@ -26,10 +29,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  // Local auth routes
+  app.post('/api/auth/register', async (req, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const { email, password, firstName, lastName } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "User already exists" });
+      }
+
+      // Create user
+      const user = await createLocalUser(email, password, firstName, lastName);
+      
+      // Create tenant user relationship
+      await storage.createTenantUser({
+        tenantId: 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6',
+        userId: user.id,
+        role: 'supplier',
+        companyName: null,
+        companyType: null,
+      });
+
+      res.json({ message: "User created successfully", user: { id: user.id, email: user.email } });
+    } catch (error) {
+      console.error("Registration error:", error);
+      res.status(500).json({ message: "Failed to register user" });
+    }
+  });
+
+  app.post('/api/auth/login', (req, res, next) => {
+    passport.authenticate('local', (err: any, user: any, info: any) => {
+      if (err) {
+        return res.status(500).json({ message: "Authentication error" });
+      }
+      if (!user) {
+        return res.status(401).json({ message: info?.message || "Invalid credentials" });
+      }
+      
+      req.logIn(user, (err) => {
+        if (err) {
+          return res.status(500).json({ message: "Login error" });
+        }
+        res.json({ message: "Login successful", user: { id: user.id, email: user.email } });
+      });
+    })(req, res, next);
+  });
+
+  // Auth routes (works for both local and Replit auth)
+  app.get('/api/auth/user', isAnyAuthenticated, async (req: any, res) => {
+    try {
+      // Handle both local and Replit auth
+      const userId = req.user.claims?.sub || req.user.id;
       const user = await storage.getUser(userId);
       
       if (!user) {
@@ -37,7 +93,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get tenant information
-      const tenantUsers = await storage.getTenantUsers('default-tenant'); // For now, use default tenant
+      const tenantUsers = await storage.getTenantUsers('a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6'); // Default tenant UUID
       const tenantUser = tenantUsers.find(tu => tu.userId === userId);
 
       res.json({
@@ -71,7 +127,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/supplier-profile', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const tenantId = 'default-tenant'; // For now, use default tenant
+      const tenantId = 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6'; // Default tenant UUID
       
       const profile = await storage.getSupplierProfile(tenantId, userId);
       
@@ -89,7 +145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/supplier-profile', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const tenantId = 'default-tenant';
+      const tenantId = 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6';
       
       const profileData = insertSupplierProfileSchema.parse({
         ...req.body,
@@ -122,7 +178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/purchase-orders', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const tenantId = 'default-tenant';
+      const tenantId = 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6';
       
       const orders = await storage.getPurchaseOrders(tenantId, userId);
       res.json(orders);
@@ -135,7 +191,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/purchase-orders/:id', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const tenantId = 'default-tenant';
+      const tenantId = 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6';
       
       const order = await storage.getPurchaseOrder(id, tenantId);
       
@@ -153,7 +209,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/purchase-orders', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const tenantId = 'default-tenant';
+      const tenantId = 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6';
       
       const orderData = insertPurchaseOrderSchema.parse({
         ...req.body,
@@ -186,7 +242,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/invoices', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const tenantId = 'default-tenant';
+      const tenantId = 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6';
       
       const invoices = await storage.getInvoices(tenantId, userId);
       res.json(invoices);
@@ -199,7 +255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/invoices/:id', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const tenantId = 'default-tenant';
+      const tenantId = 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6';
       
       const invoice = await storage.getInvoice(id, tenantId);
       
@@ -217,7 +273,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/invoices', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const tenantId = 'default-tenant';
+      const tenantId = 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6';
       
       const invoiceData = insertInvoiceSchema.parse({
         ...req.body,
@@ -250,7 +306,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/documents', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const tenantId = 'default-tenant';
+      const tenantId = 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6';
       
       const documents = await storage.getDocuments(tenantId, userId);
       res.json(documents);
@@ -263,7 +319,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/documents/upload', isAuthenticated, upload.single('file'), async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const tenantId = 'default-tenant';
+      const tenantId = 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6';
       
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
@@ -294,7 +350,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/documents/:id', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const tenantId = 'default-tenant';
+      const tenantId = 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6';
       
       await storage.deleteDocument(id, tenantId);
       res.status(204).send();
@@ -308,7 +364,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/messages', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const tenantId = 'default-tenant';
+      const tenantId = 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6';
       
       const messages = await storage.getMessages(tenantId, userId);
       res.json(messages);
@@ -321,7 +377,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/messages', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const tenantId = 'default-tenant';
+      const tenantId = 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6';
       
       const messageData = insertMessageSchema.parse({
         ...req.body,
@@ -353,7 +409,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/messages/unread-count', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const tenantId = 'default-tenant';
+      const tenantId = 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6';
       
       const count = await storage.getUnreadMessageCount(tenantId, userId);
       res.json({ count });
@@ -367,7 +423,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/dashboard/metrics', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const tenantId = 'default-tenant';
+      const tenantId = 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6';
       
       const metrics = await storage.getDashboardMetrics(tenantId, userId);
       res.json(metrics);
@@ -381,7 +437,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/performance-metrics', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const tenantId = 'default-tenant';
+      const tenantId = 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6';
       
       const metrics = await storage.getPerformanceMetrics(tenantId, userId);
       res.json(metrics);

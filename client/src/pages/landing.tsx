@@ -16,7 +16,7 @@ export default function Landing() {
               <h1 className="text-xl font-semibold text-slate-900">SupplyChain Pro</h1>
             </div>
             <Button 
-              onClick={() => window.location.href = '/api/login'}
+              onClick={() => window.location.href = '/login'}
               data-testid="button-login"
             >
               Sign In
@@ -37,7 +37,7 @@ export default function Landing() {
           </p>
           <Button 
             size="lg" 
-            onClick={() => window.location.href = '/api/login'}
+            onClick={() => window.location.href = '/login'}
             data-testid="button-get-started"
           >
             Get Started
