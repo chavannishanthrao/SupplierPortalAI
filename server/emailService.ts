@@ -64,7 +64,21 @@ const getSMTPConfig = async (tenantId: string = 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b
 };
 
 const createEmailTransporter = async (config: EmailConfig): Promise<Transporter> => {
-  return nodemailer.createTransport(config);
+  // Add additional configuration for better Gmail compatibility
+  const transportConfig = {
+    ...config,
+    pool: true,
+    maxConnections: 1,
+    rateDelta: 20000,
+    rateLimit: 5,
+    debug: false,
+    logger: false,
+    connectionTimeout: 10000,
+    greetingTimeout: 5000,
+    socketTimeout: 10000,
+  };
+  
+  return nodemailer.createTransport(transportConfig);
 };
 
 interface EmailResult {
