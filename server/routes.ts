@@ -523,7 +523,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         tenantId: currentUser?.tenantId || 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6',
         entityId: req.body.entityId,
         supplierName: req.body.supplierName,
-        requestorId: req.body.requestorId,
+        requestorId: currentUser?.id || 'demo-user-12345',
         responseDueDate: req.body.responseDueDate ? new Date(req.body.responseDueDate) : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
         supplierCategory: req.body.supplierCategory,
         defaultPaymentTerms: req.body.defaultPaymentTerms,
