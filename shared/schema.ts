@@ -217,15 +217,46 @@ export const performanceMetrics = pgTable("performance_metrics", {
 export const vendorInvitations = pgTable("vendor_invitations", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
-  email: varchar("email", { length: 255 }).notNull(),
-  firstName: varchar("first_name", { length: 100 }),
-  lastName: varchar("last_name", { length: 100 }),
-  companyName: varchar("company_name", { length: 255 }),
+  entityId: varchar("entity_id", { length: 255 }), // Entity selection for multi-entity organizations
+  supplierName: varchar("supplier_name", { length: 255 }).notNull(),
+  requestorId: varchar("requestor_id").references(() => users.id).notNull(),
+  responseDueDate: timestamp("response_due_date").notNull(),
+  supplierCategory: varchar("supplier_category", { length: 100 }).notNull(),
+  defaultPaymentTerms: varchar("default_payment_terms", { length: 100 }).notNull(),
+  
+  // Primary contact details
+  primaryContactFirstName: varchar("primary_contact_first_name", { length: 100 }).notNull(),
+  primaryContactLastName: varchar("primary_contact_last_name", { length: 100 }).notNull(),
+  primaryContactPhone: varchar("primary_contact_phone", { length: 50 }),
+  primaryContactEmail: varchar("primary_contact_email", { length: 255 }).notNull(),
+  
+  // Secondary contact details (optional)
+  secondaryContactFirstName: varchar("secondary_contact_first_name", { length: 100 }),
+  secondaryContactLastName: varchar("secondary_contact_last_name", { length: 100 }),
+  secondaryContactPhone: varchar("secondary_contact_phone", { length: 50 }),
+  secondaryContactEmail: varchar("secondary_contact_email", { length: 255 }),
+  
+  // Documents and templates
+  attachedDocuments: jsonb("attached_documents").$type<Array<{
+    id: string;
+    filename: string;
+    originalName: string;
+    fileType: string;
+    category: string; // 'nda', 'contract', 'policy', etc.
+    requiresSignature: boolean;
+    url: string;
+  }>>(),
+  emailTemplateId: varchar("email_template_id", { length: 255 }),
+  
+  // Generated credentials for supplier login
+  supplierEmail: varchar("supplier_email", { length: 255 }).notNull(),
+  tempPassword: varchar("temp_password", { length: 255 }).notNull(),
+  
   inviteToken: varchar("invite_token", { length: 255 }).unique().notNull(),
-  status: varchar("status", { length: 50 }).default('pending'), // pending, accepted, expired, revoked
+  status: varchar("status", { length: 50 }).default('draft'), // draft, pending, accepted, expired, cancelled
   invitedBy: varchar("invited_by").references(() => users.id).notNull(),
   customMessage: text("custom_message"),
-  expiresAt: timestamp("expires_at").notNull(),
+  expiresAt: timestamp("expires_at"),
   acceptedAt: timestamp("accepted_at"),
   remindersSent: integer("reminders_sent").default(0),
   lastReminderAt: timestamp("last_reminder_at"),
@@ -342,6 +373,47 @@ export const vendorVerifications = pgTable("vendor_verifications", {
   verificationSource: varchar("verification_source", { length: 100 }), // govt_api, third_party, manual
   verifiedAt: timestamp("verified_at"),
   expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Email templates for vendor invitations
+export const emailTemplates = pgTable("email_templates", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  subject: varchar("subject", { length: 500 }).notNull(),
+  bodyHtml: text("body_html").notNull(),
+  bodyText: text("body_text"),
+  templateType: varchar("template_type", { length: 100 }).notNull(), // vendor_invitation, reminder, welcome, etc.
+  variables: jsonb("variables").$type<Array<{
+    key: string;
+    description: string;
+    required: boolean;
+  }>>(),
+  isActive: boolean("is_active").default(true),
+  createdBy: varchar("created_by").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Reminder settings for vendor invitations
+export const reminderSettings = pgTable("reminder_settings", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  reminderType: varchar("reminder_type", { length: 100 }).notNull(), // vendor_invitation, onboarding_incomplete, etc.
+  scheduleConfig: jsonb("schedule_config").$type<{
+    intervals: Array<{ days: number; description: string }>; // e.g., [{ days: 3, description: "3 days after invite" }]
+    maxReminders: number;
+    escalationRules?: Array<{
+      afterReminder: number;
+      escalateTo: string; // user ID
+      emailTemplate?: string;
+    }>;
+  }>(),
+  emailTemplateId: varchar("email_template_id", { length: 255 }).references(() => emailTemplates.id),
+  isActive: boolean("is_active").default(true),
+  createdBy: varchar("created_by").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

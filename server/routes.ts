@@ -447,6 +447,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Support data endpoints for vendor onboarding
+  app.get('/api/entities', isAnyAuthenticated, async (req: any, res) => {
+    try {
+      // Mock entities for now - in a real implementation this would come from a database
+      const entities = [
+        { id: 'entity-1', name: 'Manufacturing Division', code: 'MFG' },
+        { id: 'entity-2', name: 'Services Division', code: 'SVC' },
+        { id: 'entity-3', name: 'Technology Division', code: 'TECH' },
+      ];
+      res.json(entities);
+    } catch (error) {
+      console.error("Error fetching entities:", error);
+      res.status(500).json({ message: "Failed to fetch entities" });
+    }
+  });
+
+  app.get('/api/users', isAnyAuthenticated, async (req: any, res) => {
+    try {
+      // Mock users for requestor dropdown - in real implementation would filter active users
+      const users = [
+        { id: 'user-1', name: 'John Smith', email: 'john.smith@company.com', role: 'Procurement Manager' },
+        { id: 'user-2', name: 'Sarah Johnson', email: 'sarah.johnson@company.com', role: 'Vendor Manager' },
+        { id: 'user-3', name: 'Mike Davis', email: 'mike.davis@company.com', role: 'Director of Operations' },
+      ];
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.get('/api/email-templates', isAnyAuthenticated, async (req: any, res) => {
+    try {
+      // Mock email templates - in real implementation from database
+      const templates = [
+        { id: 'template-1', name: 'Standard Vendor Invitation', subject: 'Invitation to Partner with {{companyName}}' },
+        { id: 'template-2', name: 'Premium Vendor Invitation', subject: 'Exclusive Partnership Opportunity with {{companyName}}' },
+        { id: 'template-3', name: 'Quick Onboarding Template', subject: 'Fast-Track Vendor Registration' },
+      ];
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching email templates:", error);
+      res.status(500).json({ message: "Failed to fetch email templates" });
+    }
+  });
+
   // Vendor onboarding API routes
   
   // Vendor invitations

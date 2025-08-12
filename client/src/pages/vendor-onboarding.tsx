@@ -33,11 +33,36 @@ import {
 } from "lucide-react";
 
 const inviteVendorSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  companyName: z.string().min(1, "Company name is required"),
+  entityId: z.string().optional(),
+  supplierName: z.string().min(1, "Supplier name is required"),
+  requestorId: z.string().min(1, "Requestor is required"),
+  responseDueDate: z.string().min(1, "Response due date is required"),
+  supplierCategory: z.string().min(1, "Supplier category is required"),
+  defaultPaymentTerms: z.string().min(1, "Payment terms are required"),
+  
+  // Primary contact
+  primaryContactFirstName: z.string().min(1, "Primary contact first name is required"),
+  primaryContactLastName: z.string().min(1, "Primary contact last name is required"),
+  primaryContactPhone: z.string().optional(),
+  primaryContactEmail: z.string().email("Invalid primary contact email"),
+  
+  // Secondary contact (optional)
+  secondaryContactFirstName: z.string().optional(),
+  secondaryContactLastName: z.string().optional(),
+  secondaryContactPhone: z.string().optional(),
+  secondaryContactEmail: z.string().email("Invalid secondary contact email").optional().or(z.literal("")),
+  
+  emailTemplateId: z.string().optional(),
   customMessage: z.string().optional(),
+  attachedDocuments: z.array(z.object({
+    id: z.string(),
+    filename: z.string(),
+    originalName: z.string(),
+    fileType: z.string(),
+    category: z.string(),
+    requiresSignature: z.boolean(),
+    url: z.string(),
+  })).optional(),
 });
 
 type InviteVendorForm = z.infer<typeof inviteVendorSchema>;
@@ -45,6 +70,7 @@ type InviteVendorForm = z.infer<typeof inviteVendorSchema>;
 export default function VendorOnboardingPage() {
   const { toast } = useToast();
   const [selectedTab, setSelectedTab] = useState("dashboard");
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
 
   // Queries for vendor onboarding data
   const { data: invitations = [], isLoading: invitationsLoading } = useQuery({
@@ -59,15 +85,40 @@ export default function VendorOnboardingPage() {
     queryKey: ["/api/vendor-approval-workflows"],
   });
 
+  // Support data queries
+  const { data: entities = [] } = useQuery({
+    queryKey: ["/api/entities"],
+  });
+
+  const { data: requestors = [] } = useQuery({
+    queryKey: ["/api/users"],
+  });
+
+  const { data: emailTemplates = [] } = useQuery({
+    queryKey: ["/api/email-templates"],
+  });
+
   // Form for inviting vendors
   const inviteForm = useForm<InviteVendorForm>({
     resolver: zodResolver(inviteVendorSchema),
     defaultValues: {
-      email: "",
-      firstName: "",
-      lastName: "",
-      companyName: "",
+      entityId: "",
+      supplierName: "",
+      requestorId: "",
+      responseDueDate: "",
+      supplierCategory: "",
+      defaultPaymentTerms: "",
+      primaryContactFirstName: "",
+      primaryContactLastName: "",
+      primaryContactPhone: "",
+      primaryContactEmail: "",
+      secondaryContactFirstName: "",
+      secondaryContactLastName: "",
+      secondaryContactPhone: "",
+      secondaryContactEmail: "",
+      emailTemplateId: "",
       customMessage: "",
+      attachedDocuments: [],
     },
   });
 
@@ -115,14 +166,14 @@ export default function VendorOnboardingPage() {
           </p>
         </div>
         
-        <Dialog>
+        <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
           <DialogTrigger asChild>
             <Button className="flex items-center gap-2">
               <UserPlus className="h-4 w-4" />
               Invite Vendor
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Invite New Vendor</DialogTitle>
               <DialogDescription>
@@ -131,29 +182,317 @@ export default function VendorOnboardingPage() {
             </DialogHeader>
             
             <Form {...inviteForm}>
-              <form onSubmit={inviteForm.handleSubmit(onInviteVendor)} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <form onSubmit={inviteForm.handleSubmit(onInviteVendor)} className="space-y-6">
+                {/* Basic Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Basic Information</h3>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={inviteForm.control}
+                      name="entityId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Entity</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select entity" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {entities.map((entity: any) => (
+                                <SelectItem key={entity.id} value={entity.id}>
+                                  {entity.name} ({entity.code})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={inviteForm.control}
+                      name="supplierName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Supplier Name *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Supplier Company Ltd." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={inviteForm.control}
+                      name="requestorId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Requestor *</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select requestor" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {requestors.map((user: any) => (
+                                <SelectItem key={user.id} value={user.id}>
+                                  {user.name} - {user.role}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={inviteForm.control}
+                      name="responseDueDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Response Due Date *</FormLabel>
+                          <FormControl>
+                            <Input type="datetime-local" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={inviteForm.control}
+                      name="supplierCategory"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Supplier Category *</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select category" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="manufacturing">Manufacturing</SelectItem>
+                              <SelectItem value="services">Services</SelectItem>
+                              <SelectItem value="technology">Technology</SelectItem>
+                              <SelectItem value="logistics">Logistics</SelectItem>
+                              <SelectItem value="consulting">Consulting</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={inviteForm.control}
+                      name="defaultPaymentTerms"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Default Payment Terms *</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select terms" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="net-15">Net 15 days</SelectItem>
+                              <SelectItem value="net-30">Net 30 days</SelectItem>
+                              <SelectItem value="net-45">Net 45 days</SelectItem>
+                              <SelectItem value="net-60">Net 60 days</SelectItem>
+                              <SelectItem value="immediate">Immediate</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* Primary Contact */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Primary Contact Details</h3>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={inviteForm.control}
+                      name="primaryContactFirstName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>First Name *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="John" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={inviteForm.control}
+                      name="primaryContactLastName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Last Name *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Doe" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={inviteForm.control}
+                      name="primaryContactEmail"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email *</FormLabel>
+                          <FormControl>
+                            <Input type="email" placeholder="john.doe@supplier.com" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={inviteForm.control}
+                      name="primaryContactPhone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone</FormLabel>
+                          <FormControl>
+                            <Input type="tel" placeholder="+1 (555) 123-4567" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* Secondary Contact */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Secondary Contact Details (Optional)</h3>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={inviteForm.control}
+                      name="secondaryContactFirstName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>First Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Jane" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={inviteForm.control}
+                      name="secondaryContactLastName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Last Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Smith" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={inviteForm.control}
+                      name="secondaryContactEmail"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input type="email" placeholder="jane.smith@supplier.com" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={inviteForm.control}
+                      name="secondaryContactPhone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone</FormLabel>
+                          <FormControl>
+                            <Input type="tel" placeholder="+1 (555) 987-6543" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* Email Template & Message */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Email Configuration</h3>
+                  
                   <FormField
                     control={inviteForm.control}
-                    name="firstName"
+                    name="emailTemplateId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>First Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="John" {...field} />
-                        </FormControl>
+                        <FormLabel>Email Template</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select email template" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {emailTemplates.map((template: any) => (
+                              <SelectItem key={template.id} value={template.id}>
+                                {template.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+
                   <FormField
                     control={inviteForm.control}
-                    name="lastName"
+                    name="customMessage"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Last Name</FormLabel>
+                        <FormLabel>Custom Message</FormLabel>
                         <FormControl>
-                          <Input placeholder="Doe" {...field} />
+                          <Textarea 
+                            placeholder="Add a personalized message to include in the invitation email..." 
+                            className="min-h-[100px]"
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -161,59 +500,19 @@ export default function VendorOnboardingPage() {
                   />
                 </div>
 
-                <FormField
-                  control={inviteForm.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email Address</FormLabel>
-                      <FormControl>
-                        <Input placeholder="john.doe@company.com" type="email" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={inviteForm.control}
-                  name="companyName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Company Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Company Inc." {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={inviteForm.control}
-                  name="customMessage"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Custom Message (Optional)</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Add a personalized message to the invitation..." 
-                          className="min-h-[80px]"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="flex justify-end gap-3 pt-4">
-                  <DialogTrigger asChild>
-                    <Button type="button" variant="outline">Cancel</Button>
-                  </DialogTrigger>
-                  <Button type="submit" disabled={inviteVendorMutation.isPending}>
-                    {inviteVendorMutation.isPending ? "Sending..." : "Send Invitation"}
+                {/* Action Buttons */}
+                <div className="flex justify-between gap-3 pt-6">
+                  <Button type="button" variant="outline" onClick={() => setInviteDialogOpen(false)}>
+                    Cancel
                   </Button>
+                  <div className="flex gap-2">
+                    <Button type="button" variant="outline">
+                      Save as Draft
+                    </Button>
+                    <Button type="submit" disabled={inviteVendorMutation.isPending}>
+                      {inviteVendorMutation.isPending ? "Sending..." : "Send Invitation"}
+                    </Button>
+                  </div>
                 </div>
               </form>
             </Form>
