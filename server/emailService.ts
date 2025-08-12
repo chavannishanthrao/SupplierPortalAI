@@ -43,8 +43,26 @@ const initializeEmailService = () => {
   return transporter;
 };
 
-export async function sendEmail(params: EmailParams): Promise<boolean> {
+interface EmailResult {
+  success: boolean;
+  messageId?: string;
+  error?: string;
+  timestamp: Date;
+}
+
+export async function sendEmail(params: EmailParams): Promise<EmailResult> {
+  const timestamp = new Date();
+  
   try {
+    // Check if SMTP is configured
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      return {
+        success: false,
+        error: 'SMTP credentials not configured. Please configure in Admin settings.',
+        timestamp
+      };
+    }
+
     const emailTransporter = initializeEmailService();
     
     const mailOptions = {
@@ -55,12 +73,21 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       html: params.html,
     };
 
-    await emailTransporter.sendMail(mailOptions);
-    console.log(`Email sent successfully to ${params.to}`);
-    return true;
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log(`Email sent successfully to ${params.to}`, info.messageId);
+    return {
+      success: true,
+      messageId: info.messageId,
+      timestamp
+    };
   } catch (error) {
     console.error('Email sending failed:', error);
-    return false;
+    const errorMessage = error instanceof Error ? error.message : 'Unknown email error';
+    return {
+      success: false,
+      error: errorMessage,
+      timestamp
+    };
   }
 }
 

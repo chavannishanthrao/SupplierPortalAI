@@ -104,6 +104,7 @@ export interface IStorage {
   getVendorInvitations(tenantId: string): Promise<VendorInvitation[]>;
   createVendorInvitation(invitation: InsertVendorInvitation): Promise<VendorInvitation>;
   getVendorInvitationByToken(token: string): Promise<VendorInvitation | undefined>;
+  updateVendorInvitation(id: string, updates: Partial<VendorInvitation>): Promise<VendorInvitation>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -433,6 +434,15 @@ export class DatabaseStorage implements IStorage {
       .from(vendorInvitations)
       .where(eq(vendorInvitations.inviteToken, token));
     return invitation;
+  }
+
+  async updateVendorInvitation(id: string, updates: Partial<VendorInvitation>): Promise<VendorInvitation> {
+    const [result] = await db
+      .update(vendorInvitations)
+      .set(updates)
+      .where(eq(vendorInvitations.id, id))
+      .returning();
+    return result;
   }
 }
 

@@ -260,6 +260,11 @@ export const vendorInvitations = pgTable("vendor_invitations", {
   acceptedAt: timestamp("accepted_at"),
   remindersSent: integer("reminders_sent").default(0),
   lastReminderAt: timestamp("last_reminder_at"),
+  emailStatus: varchar("email_status", { length: 50 }).default('pending'), // pending, sent, failed, bounced
+  emailSentAt: timestamp("email_sent_at"),
+  emailFailureReason: text("email_failure_reason"),
+  emailAttempts: integer("email_attempts").default(0),
+  lastEmailAttempt: timestamp("last_email_attempt"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -571,7 +576,13 @@ export const insertInvoiceSchema = createInsertSchema(invoices);
 export const insertDocumentSchema = createInsertSchema(documents);
 export const insertMessageSchema = createInsertSchema(messages);
 export const insertPerformanceMetricSchema = createInsertSchema(performanceMetrics);
-export const insertVendorInvitationSchema = createInsertSchema(vendorInvitations);
+export const insertVendorInvitationSchema = createInsertSchema(vendorInvitations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  emailSentAt: true,
+  lastEmailAttempt: true,
+});
 export const insertVendorOnboardingFormSchema = createInsertSchema(vendorOnboardingForms);
 export const insertVendorVerificationSchema = createInsertSchema(vendorVerifications);
 export const insertEmailTemplateSchema = createInsertSchema(emailTemplates);

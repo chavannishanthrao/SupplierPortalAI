@@ -520,7 +520,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
       
       const invitationData = {
-        id: nanoid(),
         tenantId: currentUser?.tenantId || 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6',
         entityId: req.body.entityId,
         supplierName: req.body.supplierName,
@@ -571,7 +570,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       // Attempt to send email
-      const emailSent = await sendEmail({
+      const emailResult = await sendEmail({
         to: supplierEmail,
         from: process.env.SMTP_USER || 'noreply@company.com',
         subject,
@@ -579,18 +578,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         text
       });
 
+      // Update invitation with email status
+      const emailStatus = emailResult.success ? 'sent' : 'failed';
+      const updateData: any = {
+        emailStatus,
+        emailAttempts: 1,
+        lastEmailAttempt: emailResult.timestamp,
+        updatedAt: new Date(),
+      };
+
+      if (emailResult.success) {
+        updateData.emailSentAt = emailResult.timestamp;
+      } else {
+        updateData.emailFailureReason = emailResult.error;
+      }
+
+      // Update the invitation in database with email status
+      await storage.updateVendorInvitation(savedInvitation.id, updateData);
+
       console.log("Vendor invitation created:", {
         ...invitationData,
         tempPassword: '***hidden***',
-        emailSent
+        emailResult: { success: emailResult.success, error: emailResult.error }
       });
       
       res.json({ 
-        message: emailSent ? "Vendor invitation sent successfully via email" : "Vendor invitation created (email configuration needed)",
+        message: emailResult.success ? "Vendor invitation sent successfully via email" : "Vendor invitation created (email failed to send)",
         invitationId: savedInvitation.id,
         supplierEmail: supplierEmail,
-        emailSent,
-        inviteLink: emailSent ? undefined : inviteLink // Include link if email failed
+        emailSent: emailResult.success,
+        emailError: emailResult.error,
+        inviteLink: emailResult.success ? undefined : inviteLink // Include link if email failed
       });
     } catch (error) {
       console.error("Error creating vendor invitation:", error);
