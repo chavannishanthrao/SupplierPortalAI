@@ -64,7 +64,7 @@ const getSMTPConfig = async (tenantId: string = 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b
 };
 
 const createEmailTransporter = async (config: EmailConfig): Promise<Transporter> => {
-  return nodemailer.createTransporter(config);
+  return nodemailer.createTransport(config);
 };
 
 interface EmailResult {

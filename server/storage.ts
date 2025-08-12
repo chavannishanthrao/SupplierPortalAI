@@ -494,25 +494,40 @@ export class DatabaseStorage implements IStorage {
   }
 
   async setAdminSetting(tenantId: string, settingKey: string, settingValue: string, settingType: string = 'string'): Promise<AdminSetting> {
-    const [setting] = await db
-      .insert(adminSettings)
-      .values({
-        tenantId,
-        settingKey,
-        settingValue,
-        settingType,
-        isEncrypted: settingKey.toLowerCase().includes('password') || settingKey.toLowerCase().includes('secret')
-      })
-      .onConflictDoUpdate({
-        target: [adminSettings.tenantId, adminSettings.settingKey],
-        set: {
+    // Try to find existing setting first
+    const existingSetting = await this.getAdminSetting(tenantId, settingKey);
+    
+    if (existingSetting) {
+      // Update existing setting
+      const [setting] = await db
+        .update(adminSettings)
+        .set({
           settingValue,
           settingType,
           updatedAt: new Date(),
-        },
-      })
-      .returning();
-    return setting;
+        })
+        .where(
+          and(
+            eq(adminSettings.tenantId, tenantId),
+            eq(adminSettings.settingKey, settingKey)
+          )
+        )
+        .returning();
+      return setting;
+    } else {
+      // Create new setting
+      const [setting] = await db
+        .insert(adminSettings)
+        .values({
+          tenantId,
+          settingKey,
+          settingValue,
+          settingType,
+          isEncrypted: settingKey.toLowerCase().includes('password') || settingKey.toLowerCase().includes('secret')
+        })
+        .returning();
+      return setting;
+    }
   }
 
   async getAdminSettings(tenantId: string): Promise<AdminSetting[]> {
