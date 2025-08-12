@@ -30,7 +30,7 @@ import {
 
 export default function VendorOnboardingPage() {
   const { toast } = useToast();
-  const [selectedTab, setSelectedTab] = useState("dashboard");
+  const [selectedTab, setSelectedTab] = useState("invites");
   const [, setLocation] = useLocation();
 
   // Queries for vendor onboarding data
@@ -78,103 +78,20 @@ export default function VendorOnboardingPage() {
 
       {/* Tabs Navigation */}
       <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger value="invitations">Invitations</TabsTrigger>
-          <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
-          <TabsTrigger value="approvals">Approvals</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="invites">Invites</TabsTrigger>
+          <TabsTrigger value="review">Review</TabsTrigger>
+          <TabsTrigger value="withdrawn">Withdrawn</TabsTrigger>
+          <TabsTrigger value="active">Active Suppliers</TabsTrigger>
+          <TabsTrigger value="rejected">Rejected</TabsTrigger>
         </TabsList>
 
-        {/* Dashboard Tab */}
-        <TabsContent value="dashboard" className="space-y-6">
-          {/* Metrics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Invitations</CardTitle>
-                <Mail className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{dashboardMetrics.totalInvitations}</div>
-                <p className="text-xs text-muted-foreground">Vendors invited</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pending Invitations</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{dashboardMetrics.pendingInvitations}</div>
-                <p className="text-xs text-muted-foreground">Awaiting response</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Onboarding</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{dashboardMetrics.activeOnboarding}</div>
-                <p className="text-xs text-muted-foreground">In progress</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Completed</CardTitle>
-                <CheckCircle className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{dashboardMetrics.completedOnboarding}</div>
-                <p className="text-xs text-muted-foreground">Approved vendors</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Recent Activity */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>Latest vendor onboarding activities</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {invitations.slice(0, 5).map((invitation: any) => (
-                  <div key={invitation.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                        <Mail className="h-4 w-4 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium">{invitation.firstName} {invitation.lastName}</p>
-                        <p className="text-sm text-muted-foreground">{invitation.companyName}</p>
-                      </div>
-                    </div>
-                    <Badge variant={invitation.status === 'pending' ? 'secondary' : 
-                                  invitation.status === 'accepted' ? 'default' : 'destructive'}>
-                      {invitation.status}
-                    </Badge>
-                  </div>
-                ))}
-                {invitations.length === 0 && (
-                  <p className="text-center text-muted-foreground py-8">
-                    No vendor invitations yet. Click "Invite Vendor" to get started.
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Invitations Tab */}
-        <TabsContent value="invitations" className="space-y-6">
+        {/* Stage 1: Invites Tab */}
+        <TabsContent value="invites" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Vendor Invitations</CardTitle>
-              <CardDescription>Track and manage all vendor invitations</CardDescription>
+              <CardDescription>Track and manage all vendor invitations sent to potential suppliers</CardDescription>
             </CardHeader>
             <CardContent>
               {invitationsLoading ? (
@@ -183,6 +100,9 @@ export default function VendorOnboardingPage() {
                 <div className="text-center py-8">
                   <UserPlus className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground">No invitations sent yet</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Click "Invite Vendor" to send your first invitation
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -224,20 +144,42 @@ export default function VendorOnboardingPage() {
           </Card>
         </TabsContent>
 
-        {/* Onboarding Tab */}
-        <TabsContent value="onboarding" className="space-y-6">
+        {/* Stage 2: Review Tab */}
+        <TabsContent value="review" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Vendor Onboarding Forms</CardTitle>
-              <CardDescription>Monitor vendor data collection and verification</CardDescription>
+              <CardTitle>Under Review</CardTitle>
+              <CardDescription>Vendor applications currently being reviewed and evaluated</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <AlertCircle className="h-12 w-12 text-blue-500 mx-auto mb-4" />
+                <p className="text-muted-foreground">No vendor applications under review</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Vendors who have submitted their onboarding forms will appear here for evaluation
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Stage 3: Withdrawn Tab */}
+        <TabsContent value="withdrawn" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Withdrawn Applications</CardTitle>
+              <CardDescription>Vendor applications that have been withdrawn or cancelled</CardDescription>
             </CardHeader>
             <CardContent>
               {formsLoading ? (
                 <div className="text-center py-8">Loading onboarding forms...</div>
               ) : onboardingForms.length === 0 ? (
                 <div className="text-center py-8">
-                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No onboarding forms submitted yet</p>
+                  <XCircle className="h-12 w-12 text-orange-500 mx-auto mb-4" />
+                  <p className="text-muted-foreground">No withdrawn applications</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Vendors who withdraw their applications will be listed here
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -277,57 +219,40 @@ export default function VendorOnboardingPage() {
           </Card>
         </TabsContent>
 
-        {/* Approvals Tab */}
-        <TabsContent value="approvals" className="space-y-6">
+        {/* Stage 4: Active Suppliers Tab */}
+        <TabsContent value="active" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Approval Workflows</CardTitle>
-              <CardDescription>Manage vendor approval processes and scoring</CardDescription>
+              <CardTitle>Active Suppliers</CardTitle>
+              <CardDescription>Approved and active vendor partners</CardDescription>
             </CardHeader>
             <CardContent>
-              {workflowsLoading ? (
-                <div className="text-center py-8">Loading approval workflows...</div>
-              ) : approvalWorkflows.length === 0 ? (
-                <div className="text-center py-8">
-                  <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No approval workflows in progress</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {approvalWorkflows.map((workflow: any) => (
-                    <div key={workflow.id} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-medium">{workflow.vendorName || "Unknown Vendor"}</h3>
-                            <Badge variant={workflow.finalStatus === 'pending' ? 'secondary' : 
-                                          workflow.finalStatus === 'approved' ? 'default' : 'destructive'}>
-                              {workflow.finalStatus}
-                            </Badge>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <span className="text-sm text-muted-foreground">
-                              Step {workflow.currentStep} of {workflow.workflowSteps?.length || 1}
-                            </span>
-                            {workflow.overallScore && (
-                              <div className="flex items-center gap-2">
-                                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm font-medium">{workflow.overallScore}/100</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button variant="outline" size="sm">
-                            <Eye className="h-4 w-4 mr-1" />
-                            Review
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <div className="text-center py-8">
+                <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                <p className="text-muted-foreground">No active suppliers yet</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Approved vendors will appear here once they complete onboarding
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Stage 5: Rejected Tab */}
+        <TabsContent value="rejected" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Rejected Applications</CardTitle>
+              <CardDescription>Vendor applications that have been rejected during the review process</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                <p className="text-muted-foreground">No rejected applications</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Vendors whose applications are rejected will be listed here with rejection reasons
+                </p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

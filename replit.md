@@ -54,7 +54,7 @@ Form design preference: Professional, beautiful forms on separate pages rather t
 - **Forms**: Standardized form components with validation
 - **Modals**: Dialog-based modals for notifications and actions
 - **Responsive Design**: Mobile-first approach with breakpoint handling
-- **Vendor Onboarding**: Multi-step invitation form with comprehensive fields and professional design
+- **Vendor Onboarding**: 5-stage workflow (Invites, Review, Withdrawn, Active Suppliers, Rejected) with professional multi-step invitation form
 
 # External Dependencies
 
