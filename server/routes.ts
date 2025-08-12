@@ -626,28 +626,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Test email endpoint
   app.post('/api/test-email', isAnyAuthenticated, async (req: any, res) => {
     try {
-      const { smtpConfig, testEmail } = req.body;
-      
-      // Temporarily set SMTP environment variables for test
-      const originalSMTPUser = process.env.SMTP_USER;
-      const originalSMTPPass = process.env.SMTP_PASS;
-      const originalSMTPHost = process.env.SMTP_HOST;
-      const originalSMTPPort = process.env.SMTP_PORT;
-      const originalSMTPSecure = process.env.SMTP_SECURE;
-      
-      process.env.SMTP_USER = smtpConfig.smtpUser;
-      process.env.SMTP_PASS = smtpConfig.smtpPassword;
-      process.env.SMTP_HOST = smtpConfig.smtpHost;
-      process.env.SMTP_PORT = smtpConfig.smtpPort;
-      process.env.SMTP_SECURE = smtpConfig.smtpSecure ? 'true' : 'false';
+      const { to, subject, message } = req.body;
       
       const emailResult = await sendEmail({
-        to: testEmail,
-        from: smtpConfig.smtpUser,
-        subject: 'Test Email from Supplier Portal',
+        to: to || 'test@example.com',
+        from: 'no-reply@supplierportal.com',
+        subject: subject || 'Test Email from Supplier Portal',
         html: `
           <h2>Email Configuration Test</h2>
-          <p>This is a test email to verify your SMTP configuration is working correctly.</p>
+          <p>${message || 'This is a test email to verify your SMTP configuration is working correctly.'}</p>
           <p>If you received this email, your SMTP settings are configured properly!</p>
           <hr>
           <p><small>Sent from Supplier Portal Admin Panel</small></p>
@@ -655,20 +642,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         text: `
           Email Configuration Test
           
-          This is a test email to verify your SMTP configuration is working correctly.
+          ${message || 'This is a test email to verify your SMTP configuration is working correctly.'}
           If you received this email, your SMTP settings are configured properly!
           
           Sent from Supplier Portal Admin Panel
         `,
         tenantId: req.user?.tenantId || 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6'
       });
-      
-      // Restore original environment variables
-      process.env.SMTP_USER = originalSMTPUser;
-      process.env.SMTP_PASS = originalSMTPPass;
-      process.env.SMTP_HOST = originalSMTPHost;
-      process.env.SMTP_PORT = originalSMTPPort;
-      process.env.SMTP_SECURE = originalSMTPSecure;
       
       res.json({
         success: emailResult.success,
